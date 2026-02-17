@@ -1,0 +1,1190 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Israeli Air – הודעה יזומה → שיחת WebRTC + תמלול חי</title>
+
+  <style>
+    :root{
+      /* Airline palette (sky / night) */
+      --air-sky:#0B76FF;
+      --air-sky-2:#44B6FF;
+      --air-navy:#08131F;
+      --air-bg:#EEF5FF;
+      --air-card:#FFFFFF;
+      --air-border:#DFE9F6;
+      --air-muted:#6C7A8B;
+
+      --air-green:#0E8A5B;
+      --air-green-2:#0A6B46;
+
+      --shadow:0 16px 40px rgba(8,19,31,.12);
+      --shadow-soft:0 10px 25px rgba(8,19,31,.10);
+      --font: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+    }
+
+    *{ box-sizing:border-box; }
+
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:#e9edf4;
+      min-height:100vh;
+      display:grid;
+      place-items:center;
+      padding:22px;
+    }
+
+    /* Phone frame */
+    .phone{
+      width:min(430px, 94vw);
+      height:min(900px, 94vh);
+      background:#0f1115;
+      border-radius:40px;
+      padding:14px;
+      box-shadow:0 34px 90px rgba(0,0,0,.35);
+      position:relative;
+    }
+    .screen{
+      height:100%;
+      border-radius:30px;
+      overflow:hidden;
+      background:var(--air-bg);
+      position:relative;
+      display:flex;
+      flex-direction:column;
+    }
+
+    /* Header (airline style) */
+    .header{
+      padding:18px 18px 16px;
+      color:#fff;
+      position:relative;
+      box-shadow:0 10px 30px rgba(0,0,0,.22);
+      background:
+        radial-gradient(900px 280px at 20% 0%, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
+        linear-gradient(180deg, var(--air-sky), var(--air-sky-2));
+    }
+
+    /* Top row: time | centered logo | status pill */
+    .topRow{
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items:center;
+      gap:10px;
+      margin-bottom:10px;
+      font-size:12px;
+      opacity:.95;
+    }
+    .time{
+      justify-self:end; /* RTL */
+      font-weight:900;
+    }
+
+    .logoCenter{
+      justify-self:center;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+
+    .brandMark{
+      width:44px;height:44px;
+      border-radius:14px;
+      background: rgba(255,255,255,.18);
+      border:1px solid rgba(255,255,255,.28);
+      display:grid;
+      place-items:center;
+      backdrop-filter: blur(8px);
+      box-shadow:0 10px 25px rgba(0,0,0,.12);
+      font-weight:1000;
+      letter-spacing:.3px;
+    }
+
+    .brandText{
+      display:flex;
+      flex-direction:column;
+      line-height:1.05;
+      text-align:center;
+    }
+    .brandText .name{
+      font-weight:1000;
+      font-size:14px;
+    }
+    .brandText .tag{
+      font-weight:900;
+      font-size:11px;
+      opacity:.9;
+    }
+
+    .pillStatus{
+      justify-self:start; /* RTL */
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background: rgba(255,255,255,.18);
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:999px;
+      padding:8px 12px;
+      font-weight:900;
+      font-size:12px;
+      backdrop-filter: blur(8px);
+    }
+    .dot{
+      width:10px;height:10px;border-radius:999px;
+      background:#43d17b;
+      box-shadow:0 0 0 3px rgba(67,209,123,.18);
+    }
+
+    .h1{
+      font-size:28px;
+      font-weight:1000;
+      margin:6px 0 2px;
+      letter-spacing:-.3px;
+    }
+    .sub{
+      font-size:13px;
+      opacity:.92;
+      font-weight:800;
+    }
+
+    /* Flight strip (mini itinerary) */
+    .flightStrip{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap:12px;
+      align-items:center;
+      background: rgba(255,255,255,.16);
+      border:1px solid rgba(255,255,255,.22);
+      border-radius:18px;
+      padding:12px;
+      backdrop-filter: blur(10px);
+    }
+    .city{
+      display:flex;
+      flex-direction:column;
+      gap:2px;
+      text-align:right;
+    }
+    .city .code{
+      font-weight:1000;
+      font-size:18px;
+      letter-spacing:.4px;
+    }
+    .city .name{
+      font-weight:900;
+      font-size:11px;
+      opacity:.92;
+    }
+    .mid{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      min-width:92px;
+    }
+    .mid .line{
+      width:92px;
+      height:2px;
+      background: rgba(255,255,255,.55);
+      border-radius:99px;
+      position:relative;
+    }
+    .mid .plane{
+      position:absolute;
+      inset:auto;
+      right:44px;
+      top:-11px;
+      font-size:16px;
+      filter: drop-shadow(0 6px 12px rgba(0,0,0,.22));
+    }
+    .mid .meta{
+      font-size:11px;
+      font-weight:900;
+      opacity:.92;
+    }
+
+    /* Main content */
+    .content{
+      flex:1;
+      overflow:auto;
+      padding:16px 16px 88px;
+    }
+    .sectionRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin:14px 2px 10px;
+    }
+    .sectionTitle{
+      font-weight:1000;
+      color: rgba(8,19,31,.58);
+      font-size:14px;
+    }
+    .pillTag{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:1000;
+      color:#0B4CC2;
+      background: rgba(11,118,255,.10);
+      border:1px solid rgba(11,118,255,.14);
+    }
+
+    /* Quick actions row (airline) */
+    .quickActions{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+      margin-bottom:8px;
+    }
+    .qa{
+      background:#fff;
+      border:1px solid var(--air-border);
+      border-radius:18px;
+      padding:12px 10px;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:8px;
+      box-shadow:0 12px 30px rgba(8,19,31,.06);
+    }
+    .qaIcon{
+      width:34px;height:34px;border-radius:12px;
+      background: rgba(11,118,255,.10);
+      border:1px solid rgba(11,118,255,.14);
+      display:grid;place-items:center;
+      font-weight:1000;
+      color: var(--air-sky);
+      font-size:16px;
+    }
+    .qaLabel{
+      font-size:12px;
+      font-weight:900;
+      color: rgba(8,19,31,.72);
+      text-align:center;
+    }
+
+    /* Messages card */
+    .msgCard{
+      background:#fff;
+      border:1px solid var(--air-border);
+      border-radius:22px;
+      box-shadow: var(--shadow-soft);
+      padding:14px;
+    }
+    .msgHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom:10px;
+    }
+    .msgHeaderLeft{
+      font-size:18px;
+      font-weight:1000;
+      color: rgba(8,19,31,.92);
+    }
+    .msgHeaderRight{
+      font-size:13px;
+      font-weight:900;
+      color: rgba(8,19,31,.55);
+    }
+
+    .msgBodyRow{
+      display:flex;
+      gap:12px;
+      align-items:flex-end;
+    }
+    .avatar{
+      width:44px;height:44px;border-radius:16px;
+      display:grid;place-items:center;
+      font-weight:1000;
+      color: var(--air-sky);
+      background: rgba(11,118,255,.10);
+      border:1px solid rgba(11,118,255,.14);
+      flex:0 0 auto;
+    }
+    .bubble{
+      flex:1;
+      background: #fff;
+      border:1px solid var(--air-border);
+      border-radius:22px;
+      padding:14px 14px 12px;
+      box-shadow:0 10px 25px rgba(8,19,31,.06);
+    }
+    .bubbleText{
+      font-size:13.5px;
+      line-height:1.45;
+      color: rgba(8,19,31,.82);
+    }
+    .bubbleText b{
+      font-weight:1000;
+      color: rgba(8,19,31,.95);
+    }
+
+    .badgeAlert{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+      padding:8px 10px;
+      border-radius:14px;
+      background: rgba(255,183,3,.14);
+      border:1px solid rgba(255,183,3,.22);
+      color: rgba(8,19,31,.82);
+      font-weight:1000;
+      font-size:12px;
+    }
+
+    .btnRow{
+      display:flex;
+      gap:10px;
+      margin-top:12px;
+      flex-wrap:wrap;
+    }
+    .btn{
+      appearance:none;
+      border:none;
+      cursor:pointer;
+      border-radius:16px;
+      padding:12px 14px;
+      font-weight:1000;
+      font-size:13px;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      box-shadow: 0 14px 28px rgba(8,19,31,.12);
+      user-select:none;
+    }
+    .btn.primary{
+      background: linear-gradient(180deg, var(--air-sky), var(--air-sky-2));
+      color:#fff;
+    }
+    .btn.call{
+      background: linear-gradient(180deg, var(--air-green), var(--air-green-2));
+      color:#fff;
+    }
+    .btn.ghost{
+      background:#fff;
+      border:1px solid var(--air-border);
+      color: rgba(8,19,31,.82);
+      box-shadow:none;
+    }
+    .btn:disabled{
+      opacity:.6;
+      cursor:not-allowed;
+      box-shadow:none;
+    }
+    .tip{
+      margin-top:12px;
+      font-size:12px;
+      color: rgba(8,19,31,.55);
+      border-top:1px solid rgba(223,233,246,.95);
+      padding-top:10px;
+      line-height:1.4;
+    }
+
+    .userReplyRow{
+      margin-top:14px;
+      display:flex;
+      justify-content:flex-start; /* RTL: bubble on the left */
+    }
+    .userReply{
+      max-width:76%;
+      background: rgba(14,138,91,.10);
+      border:1px solid rgba(14,138,91,.16);
+      color: rgba(8,19,31,.85);
+      border-radius:20px;
+      padding:10px 12px;
+      font-weight:900;
+      font-size:13px;
+      box-shadow:0 10px 25px rgba(8,19,31,.06);
+    }
+
+    /* Bottom nav (airline) */
+    .nav{
+      position:absolute;
+      left:0;right:0;bottom:0;
+      background: rgba(255,255,255,.92);
+      border-top:1px solid var(--air-border);
+      padding:10px 10px 14px;
+      display:flex;
+      justify-content:space-around;
+      z-index:10;
+      backdrop-filter: blur(10px);
+    }
+    .navItem{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+      font-size:11px;
+      font-weight:900;
+      color: rgba(8,19,31,.45);
+      min-width:52px;
+    }
+    .navItem .ico{
+      width:24px;height:24px;
+      display:grid;place-items:center;
+      border-radius:10px;
+    }
+    .navItem.active{ color: var(--air-sky); }
+    .navItem.active .ico{
+      background: rgba(11,118,255,.12);
+      border:1px solid rgba(11,118,255,.14);
+      color: var(--air-sky);
+    }
+
+    /* Modals / overlays */
+    .modal, .overlay{
+      position:absolute;
+      inset:0;
+      background: rgba(8,19,31,.52);
+      display:none;
+      z-index:50;
+      padding:12px;
+    }
+    .show{ display:block; }
+
+    .sheet{
+      position:absolute;
+      left:12px; right:12px;
+      top:88px;
+      border-radius:26px;
+      background:#fff;
+      border:1px solid rgba(255,255,255,.65);
+      box-shadow: 0 30px 90px rgba(0,0,0,.35);
+      overflow:hidden;
+    }
+    .callSheet{
+      top:68px;
+      bottom:82px;
+      display:flex;
+      flex-direction:column;
+    }
+    .topBar{
+      padding:14px;
+      border-bottom:1px solid var(--air-border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      background: rgba(11,118,255,.06);
+    }
+    .topBar .h{
+      font-weight:1000;
+      font-size:16px;
+      color: rgba(8,19,31,.92);
+    }
+
+    .sheetBody{ padding:14px; }
+    .callBody{
+      padding:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      overflow:auto;
+      flex:1;
+    }
+    .webrtcMount{
+      border:1px dashed rgba(11,118,255,.26);
+      background: rgba(11,118,255,.04);
+      border-radius:18px;
+      padding:12px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      font-size:12px;
+      color: rgba(8,19,31,.55);
+    }
+    .pill{
+      border:1px solid rgba(223,233,246,.95);
+      background:#fff;
+      border-radius:999px;
+      padding:8px 12px;
+      color: rgba(8,19,31,.70);
+      font-weight:1000;
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    /* Rebooking / options cards */
+    .projGrid{ display:grid; gap:12px; }
+    .projCard{
+      border:1px solid var(--air-border);
+      border-radius:18px;
+      padding:12px;
+      background:#fff;
+      box-shadow:0 10px 25px rgba(8,19,31,.06);
+    }
+    .projTitle{
+      font-weight:1000;
+      color: rgba(8,19,31,.90);
+      margin-bottom:6px;
+      font-size:13px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .projMeta{
+      font-size:12px;
+      color: rgba(8,19,31,.58);
+      line-height:1.55;
+    }
+
+    /* Transcript list */
+    #transcriptCard{
+      display:flex;
+      flex-direction:column;
+      height:320px;
+      min-height:260px;
+    }
+    .transcriptList{
+      margin-top:10px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      overflow:auto;
+      flex:1;
+      padding-left:4px;
+      scroll-behavior:smooth;
+      min-height:0;
+    }
+    .tLine{
+      max-width:92%;
+      border-radius:14px;
+      padding:10px 10px;
+      font-size:12.5px;
+      line-height:1.35;
+      border:1px solid rgba(223,233,246,.95);
+      background:#fff;
+      color: rgba(8,19,31,.80);
+      box-shadow:0 8px 18px rgba(8,19,31,.06);
+      white-space:pre-wrap;
+    }
+    .tLine.bot{
+      align-self:flex-end; /* RTL: bot on the right */
+      background: rgba(11,118,255,.06);
+      border-color: rgba(11,118,255,.16);
+    }
+    .tLine.user{
+      align-self:flex-start; /* RTL: user on the left */
+      background: rgba(14,138,91,.10);
+      border-color: rgba(14,138,91,.18);
+    }
+    .tMeta{
+      display:block;
+      font-size:10.5px;
+      opacity:.75;
+      margin-top:6px;
+      font-weight:900;
+      letter-spacing:.2px;
+    }
+
+    /* Hide Cognigy launcher visually once we use our own controls */
+    .hide-cognigy-launcher button[data-testid="cognigy-call-button"]{
+      opacity:0 !important;
+      pointer-events:none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="phone">
+    <div class="screen">
+
+      <div class="header">
+        <div class="topRow">
+          <div class="time">11:07</div>
+
+          <div class="logoCenter" title="Israeli Air">
+            <div class="brandMark">IA</div>
+            <div class="brandText">
+              <div class="name">ישראלי אייר</div>
+              <div class="tag">הטיסה שלי</div>
+            </div>
+          </div>
+
+          <div class="pillStatus"><span class="dot"></span> שירות זמין</div>
+        </div>
+
+        <div class="h1">שלום יוגב</div>
+        <div class="sub">הטיול הבא שלך • TLV → LCA • טיסה IA 712</div>
+
+        <div class="flightStrip" aria-label="סיכום טיסה">
+          <div class="city">
+            <div class="code">TLV</div>
+            <div class="name">ת״א</div>
+          </div>
+
+          <div class="mid">
+            <div class="line"><span class="plane">✈️</span></div>
+            <div class="meta">היום • 14:30</div>
+          </div>
+
+          <div class="city" style="text-align:left;">
+            <div class="code">LCA</div>
+            <div class="name">לרנקה</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="content">
+        <div class="sectionRow">
+          <div class="sectionTitle">פעולות מהירות</div>
+          <div style="width:18px;"></div>
+        </div>
+
+        <div class="quickActions">
+          <div class="qa"><div class="qaIcon">🧾</div><div class="qaLabel">צ׳ק-אין</div></div>
+          <div class="qa"><div class="qaIcon">🎫</div><div class="qaLabel">כרטיס עליה</div></div>
+          <div class="qa"><div class="qaIcon">🛫</div><div class="qaLabel">סטטוס טיסה</div></div>
+          <div class="qa"><div class="qaIcon">🧳</div><div class="qaLabel">כבודה</div></div>
+        </div>
+
+        <div class="sectionRow" style="margin-top:18px;">
+          <div class="sectionTitle">הודעות</div>
+          <div class="pillTag">יזום</div>
+        </div>
+
+        <div class="msgCard">
+          <div class="msgHeader">
+            <div class="msgHeaderLeft">נועה • תמיכת טיסות</div>
+            <div class="msgHeaderRight">הרגע</div>
+          </div>
+
+          <div class="msgBodyRow">
+            <div class="avatar">IA</div>
+            <div class="bubble">
+              <div class="bubbleText">
+                <b>עדכון על הטיסה:</b> שלום יוגב 👋<br>
+                זיהינו שינוי קטן בלו״ז לטיסה <b>IA 712</b>. יש לנו כמה אפשרויות שיעזרו לך להמשיך כמתוכנן:
+                שינוי לטיסה חלופית, שמירת מושב, או סיוע עם צ׳ק-אין וכבודה.
+              </div>
+
+              <div class="badgeAlert">⏱️ מומלץ לבחור אופציה ב-15 הדקות הקרובות</div>
+
+              <div class="btnRow">
+                <button class="btn primary" id="btnProjection">🛫 הצג טיסות חלופיות</button>
+                <button class="btn call" id="btnCallNow">📞 דבר עם נציג/ה</button>
+              </div>
+
+              <div class="tip">טיפ: “דבר עם נציג/ה” פותח שיחת WebRTC בתוך האפליקציה עם תמלול חי.</div>
+            </div>
+          </div>
+
+          <div class="userReplyRow">
+            <div class="userReply">מעולה — מה האפשרויות הכי מהירות להגיע?</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <div class="navItem active"><div class="ico">🏠</div><div>בית</div></div>
+        <div class="navItem"><div class="ico">🧳</div><div>הנסיעות שלי</div></div>
+        <div class="navItem"><div class="ico">🧾</div><div>צ׳ק-אין</div></div>
+        <div class="navItem"><div class="ico">💬</div><div>תמיכה</div></div>
+        <div class="navItem"><div class="ico">☰</div><div>עוד</div></div>
+      </div>
+
+      <!-- Options / Rebooking modal -->
+      <div class="modal" id="projectionModal" aria-hidden="true">
+        <div class="sheet">
+          <div class="topBar">
+            <div class="h">טיסות חלופיות והמלצה</div>
+            <button class="btn ghost" id="btnCloseProjection">✕</button>
+          </div>
+
+          <div class="sheetBody">
+            <div class="projGrid">
+              <div class="projCard">
+                <div class="projTitle">תמונת מצב <span class="pill">IA 712</span></div>
+                <div class="projMeta">
+                  יש שינוי בלו״ז. כדי לשמור על התכנון שלך, הנה אפשרויות רלוונטיות:
+                  שינוי לטיסה מוקדמת/מאוחרת, מסלול עם קונקשן, או שמירה על הטיסה עם עדכון שער בזמן אמת.
+                </div>
+              </div>
+
+              <div class="projCard">
+                <div class="projTitle">אפשרויות לדוגמה</div>
+                <div class="projMeta">דוגמאות להמחשה בלבד:</div>
+
+                <table aria-label="טיסות חלופיות" style="width:100%; border-collapse:separate; border-spacing:0; overflow:hidden; border-radius:16px; border:1px solid rgba(223,233,246,.95); margin-top:10px; font-size:12px;">
+                  <thead>
+                    <tr>
+                      <th style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95); text-align:right; background: rgba(11,118,255,.06); color: rgba(8,19,31,.75); font-weight:1000;">אפשרות</th>
+                      <th style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95); text-align:right; background: rgba(11,118,255,.06); color: rgba(8,19,31,.75); font-weight:1000;">מסלול</th>
+                      <th style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95); text-align:left; background: rgba(11,118,255,.06); color: rgba(8,19,31,.75); font-weight:1000;">ETA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95);">מוקדמת היום</td>
+                      <td style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95);">TLV → LCA (ישיר)</td>
+                      <td style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95); text-align:left;">13:55</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95);">מאוחרת היום</td>
+                      <td style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95);">TLV → LCA (ישיר)</td>
+                      <td style="padding:10px 10px; border-bottom:1px solid rgba(223,233,246,.95); text-align:left;">17:40</td>
+                    </tr>
+                    <tr>
+                      <td style="padding:10px 10px;">קונקשן</td>
+                      <td style="padding:10px 10px;">TLV → ATH → LCA</td>
+                      <td style="padding:10px 10px; text-align:left;">16:20</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div class="projMeta" style="margin-top:10px; font-size:11px; color: rgba(8,19,31,.52);">
+                  להמחשה בלבד; זמינות מושבים/תעריפים עשויה להשתנות.
+                </div>
+              </div>
+
+              <div class="projCard">
+                <div class="projTitle">המלצה מהירה</div>
+                <div class="projMeta">
+                  • אם חשוב להגיע הכי מוקדם: לבחור <b>מוקדמת היום</b><br>
+                  • אם חשוב להימנע משינויים: להישאר עם הטיסה + עדכון שער<br>
+                  • רוצים? נעזור בצ׳ק-אין/מושב/כבודה בשיחה קצרה
+                </div>
+                <div class="btnRow" style="margin-top:12px;">
+                  <button class="btn call" id="btnProjectionCall">📞 דבר עם נציג/ה</button>
+                  <button class="btn ghost" id="btnProjectionClose">סגור</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Call overlay -->
+      <div class="overlay" id="callOverlay" aria-hidden="true">
+        <div class="sheet callSheet">
+          <div class="topBar">
+            <div class="h">שיחה עם נציג/ה • תמיכת טיסות</div>
+            <button class="btn ghost" id="btnCloseCall">✕</button>
+          </div>
+
+          <div class="callBody">
+            <div class="webrtcMount">
+              <div>
+                <b>WebRTC של Cognigy</b><br>
+                <span style="font-size:11px;">בקרות שיחה בתוך האפליקציה</span>
+              </div>
+              <div class="pill" id="webrtcStatus">ממתין</div>
+            </div>
+
+            <div class="btnRow" style="margin:0;">
+              <button class="btn call" id="btnStartCall" disabled>התחל שיחה</button>
+              <button class="btn ghost" id="btnEndCall">סיים שיחה</button>
+              <button class="btn ghost" id="btnClearTranscript" title="נקה תמלול">נקה</button>
+            </div>
+
+            <!-- Transcript -->
+            <div class="projCard" id="transcriptCard">
+              <div class="projTitle">
+                <span>תמלול חי</span>
+                <span class="pill" id="transcriptCount">0 שורות</span>
+              </div>
+
+              <div class="transcriptList" id="transcriptList" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ========= CONFIG =========
+    const WIDGET_SRC = "https://static-trial.cognigy.ai/webrtc/webRTCWidget.js";
+    const COGNIGY_WEBRTC_ENDPOINT_URL =
+      "https://endpoint-trial.cognigy.ai/7d06411dfa1eb91d959df667523152a9d4c621bc04d34723abaf1c71b858ccad";
+
+    // ========= HELPERS =========
+    const byId = (id) => document.getElementById(id);
+    const show = (el) => el.classList.add("show");
+    const hide = (el) => el.classList.remove("show");
+    const setStatus = (t) => { const el = byId("webrtcStatus"); if (el) el.textContent = t; };
+
+    function isVisible(el){
+      if (!el) return false;
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
+    }
+
+    // ========= TRANSCRIPT UI (BOT merged into one bubble + auto-scroll pin) =========
+    let transcriptLines = 0;
+
+    // auto-scroll "pin to bottom" state
+    let transcriptPinnedToBottom = true;
+
+    // BOT aggregation state (one bubble until user speaks)
+    let lastBotBubbleEl = null;
+    let lastBotMetaEl = null;
+    let lastBotText = "";
+
+    function updateTranscriptCount(){
+      const el = byId("transcriptCount");
+      if (!el) return;
+      const n = transcriptLines;
+      el.textContent = `${n} ${n === 1 ? "שורה" : "שורות"}`;
+    }
+
+    function _scrollToBottom(list){
+      list.scrollTop = list.scrollHeight;
+    }
+
+    function _scrollToBottomIfPinned(list){
+      if (!transcriptPinnedToBottom) return;
+      requestAnimationFrame(() => _scrollToBottom(list));
+    }
+
+    function _setupTranscriptScrollPin(){
+      const list = byId("transcriptList");
+      if (!list) return;
+
+      const thresholdPx = 40;
+      list.addEventListener("scroll", () => {
+        const distanceFromBottom = list.scrollHeight - list.scrollTop - list.clientHeight;
+        transcriptPinnedToBottom = distanceFromBottom < thresholdPx;
+      }, { passive: true });
+
+      // start pinned
+      transcriptPinnedToBottom = true;
+    }
+
+    function _createLineEl(kind, text, metaLabel){
+      const line = document.createElement("div");
+      line.className = `tLine ${kind}`;
+      line.textContent = text;
+
+      const meta = document.createElement("span");
+      meta.className = "tMeta";
+      meta.textContent = metaLabel;
+      line.appendChild(meta);
+
+      return { line, meta };
+    }
+
+    function _flushBotBubble(){
+      lastBotBubbleEl = null;
+      lastBotMetaEl = null;
+      lastBotText = "";
+    }
+
+    function addTranscriptLine(originator, text){
+      const list = byId("transcriptList");
+      if (!list) return;
+
+      const who = (originator || "unknown").toLowerCase();
+      const safeText = String(text || "").trim();
+      if (!safeText) return;
+
+      const isUser = who === "user";
+
+      if (isUser) {
+        _flushBotBubble();
+
+        const { line } = _createLineEl("user", safeText, "יוגב קריף");
+        list.appendChild(line);
+        transcriptLines += 1;
+        updateTranscriptCount();
+        _scrollToBottomIfPinned(list);
+        return;
+      }
+
+      // BOT: always append into ONE bubble (until user speaks)
+      const botLabel = "נועה";
+
+      if (!lastBotBubbleEl) {
+        const { line, meta } = _createLineEl("bot", safeText, botLabel);
+        list.appendChild(line);
+
+        lastBotBubbleEl = line;
+        lastBotMetaEl = meta;
+        lastBotText = safeText;
+
+        transcriptLines += 1;
+        updateTranscriptCount();
+        _scrollToBottomIfPinned(list);
+        return;
+      }
+
+      // Append to existing bot bubble
+      const needsSpace = lastBotText.length > 0 && !/[ \n\r\t]$/.test(lastBotText);
+      const joiner = needsSpace ? " " : "";
+      lastBotText = `${lastBotText}${joiner}${safeText}`;
+
+      // Update bubble text while preserving meta element
+      if (!lastBotBubbleEl.firstChild || lastBotBubbleEl.firstChild.nodeType !== Node.TEXT_NODE) {
+        lastBotBubbleEl.insertBefore(document.createTextNode(""), lastBotMetaEl);
+      }
+      lastBotBubbleEl.firstChild.nodeValue = lastBotText;
+
+      if (lastBotMetaEl) lastBotMetaEl.textContent = botLabel;
+
+      _scrollToBottomIfPinned(list);
+    }
+
+    function clearTranscript(){
+      const list = byId("transcriptList");
+      if (list) list.innerHTML = "";
+      transcriptLines = 0;
+      updateTranscriptCount();
+      _flushBotBubble();
+      transcriptPinnedToBottom = true;
+    }
+
+    // ========= WEBSOCKET TAP (captures SIP INFO frames with JSON _transcription) =========
+    function installWebSocketTranscriptionTap(){
+      if (window.__wsTapInstalled) return;
+      window.__wsTapInstalled = true;
+
+      const NativeWebSocket = window.WebSocket;
+
+      window.WebSocket = function(...args){
+        const ws = new NativeWebSocket(...args);
+
+        ws.addEventListener("message", (ev) => {
+          const data = ev.data;
+          if (typeof data !== "string") return;
+
+          if (!data.includes('"_transcription"')) return;
+
+          const splitIndex = data.indexOf("\r\n\r\n");
+          if (splitIndex === -1) return;
+
+          const body = data.slice(splitIndex + 4).trim();
+          if (!body.startsWith("{")) return;
+
+          try{
+            const json = JSON.parse(body);
+            const t = json?._transcription;
+            if (!t) return;
+
+            const originator = t.originator || "unknown";
+            const messages = Array.isArray(t.messages) ? t.messages : [];
+            for (const m of messages){
+              if (m && typeof m.text === "string" && m.text.trim()){
+                addTranscriptLine(originator, m.text.trim());
+              }
+            }
+          } catch {
+            // ignore
+          }
+        });
+
+        return ws;
+      };
+
+      window.WebSocket.prototype = NativeWebSocket.prototype;
+      window.WebSocket.OPEN = NativeWebSocket.OPEN;
+      window.WebSocket.CLOSED = NativeWebSocket.CLOSED;
+      window.WebSocket.CLOSING = NativeWebSocket.CLOSING;
+      window.WebSocket.CONNECTING = NativeWebSocket.CONNECTING;
+    }
+
+    installWebSocketTranscriptionTap();
+
+    // ========= WIDGET LOADER / INIT =========
+    let widgetScriptLoaded = false;
+    let widgetInitialized = false;
+    let preloadStarted = false;
+
+    function loadScript(timeoutMs = 12000){
+      return new Promise((resolve, reject) => {
+        if (widgetScriptLoaded) return resolve("already-loaded");
+        widgetScriptLoaded = true;
+
+        const s = document.createElement("script");
+        s.src = WIDGET_SRC;
+        s.async = true;
+
+        let done = false;
+        const ok = (how) => { if (done) return; done = true; resolve(how); };
+        const fail = (how) => {
+          if (done) return;
+          done = true;
+          widgetScriptLoaded = false;
+          reject(new Error(how));
+        };
+
+        const t = setTimeout(() => fail("timeout"), timeoutMs);
+        s.onload = () => { clearTimeout(t); ok("onload"); };
+        s.onerror = () => { clearTimeout(t); fail("onerror"); };
+
+        document.head.appendChild(s);
+      });
+    }
+
+    async function initWebRTC(){
+      if (widgetInitialized) return true;
+
+      try{
+        setStatus("טוען…");
+        await loadScript(12000);
+
+        if (typeof window.initWebRTCWidget !== "function") {
+          setStatus("לא זמין");
+          return false;
+        }
+
+        setStatus("מאתחל…");
+        window.initWebRTCWidget(COGNIGY_WEBRTC_ENDPOINT_URL);
+
+        widgetInitialized = true;
+        setStatus("מוכן");
+        return true;
+      } catch {
+        setStatus("טעינה נכשלה");
+        return false;
+      }
+    }
+
+    // ========= Start/End button discovery =========
+    function findCognigyStartButton(){
+      return (
+        document.querySelector('button[data-testid="cognigy-call-button"]') ||
+        document.querySelector('button[aria-label="Start a call"]') ||
+        document.querySelector('.webrtc_widget_content_call_button')
+      );
+    }
+
+    function findCognigyEndButton(){
+      return (
+        document.querySelector('button[data-testid*="hang" i]') ||
+        document.querySelector('button[data-testid*="end" i]') ||
+        document.querySelector('button[aria-label*="hang" i]') ||
+        document.querySelector('button[aria-label*="end" i]') ||
+        document.querySelector('button[title*="hang" i]') ||
+        document.querySelector('button[title*="end" i]') ||
+        document.querySelector('button[class*="hang" i]') ||
+        document.querySelector('button[class*="end" i]')
+      );
+    }
+
+    function waitForStartButton(timeoutMs = 10000){
+      return new Promise((resolve) => {
+        const immediate = findCognigyStartButton();
+        if (immediate) return resolve(immediate);
+
+        const obs = new MutationObserver(() => {
+          const btn = findCognigyStartButton();
+          if (btn) { obs.disconnect(); resolve(btn); }
+        });
+        obs.observe(document.documentElement, { childList:true, subtree:true });
+
+        setTimeout(() => { obs.disconnect(); resolve(null); }, timeoutMs);
+      });
+    }
+
+    async function preloadForCallUI(){
+      if (preloadStarted) return;
+      preloadStarted = true;
+
+      const ok = await initWebRTC();
+      if (!ok) return;
+
+      const btn = await waitForStartButton(10000);
+      if (btn) {
+        byId("btnStartCall").disabled = false;
+        document.documentElement.classList.add("hide-cognigy-launcher");
+        setStatus("מוכן");
+      } else {
+        setStatus("לא מוכן");
+      }
+    }
+
+    function startCallSync(){
+      const btn = findCognigyStartButton();
+      if (!btn) return false;
+      btn.click();
+      document.documentElement.classList.add("hide-cognigy-launcher");
+      setStatus("מתקשר…");
+      return true;
+    }
+
+    async function endCall(){
+      try {
+        const api = window.webRTCWidget || window.webrtcWidget || null;
+        if (api && typeof api.endCall === "function") {
+          await api.endCall();
+          setStatus("הסתיים");
+          return true;
+        }
+      } catch {}
+
+      const endBtn = findCognigyEndButton();
+      if (endBtn && isVisible(endBtn)) {
+        endBtn.click();
+        setStatus("הסתיים");
+        return true;
+      }
+
+      setStatus("אין אפשרות לסיים");
+      return false;
+    }
+
+    // ========= UI wiring =========
+    document.addEventListener("DOMContentLoaded", () => {
+      _setupTranscriptScrollPin();
+
+      // Projection modal
+      byId("btnProjection").addEventListener("click", () => show(byId("projectionModal")));
+      byId("btnCloseProjection").addEventListener("click", () => hide(byId("projectionModal")));
+      byId("btnProjectionClose").addEventListener("click", () => hide(byId("projectionModal")));
+      byId("projectionModal").addEventListener("click", (e) => {
+        if (e.target === byId("projectionModal")) hide(byId("projectionModal"));
+      });
+
+      // Projection -> Call Now
+      byId("btnProjectionCall").addEventListener("click", () => {
+        hide(byId("projectionModal"));
+        show(byId("callOverlay"));
+        setStatus("טוען…");
+        preloadForCallUI();
+      });
+
+      // Call open/close
+      byId("btnCallNow").addEventListener("click", () => {
+        show(byId("callOverlay"));
+        setStatus("טוען…");
+        preloadForCallUI();
+      });
+      byId("btnCloseCall").addEventListener("click", () => hide(byId("callOverlay")));
+      byId("callOverlay").addEventListener("click", (e) => {
+        if (e.target === byId("callOverlay")) hide(byId("callOverlay"));
+      });
+
+      // Call controls
+      byId("btnStartCall").addEventListener("click", () => {
+        const ok = startCallSync();
+        if (!ok) setStatus("לא מוכן");
+      });
+
+      byId("btnEndCall").addEventListener("click", async () => {
+        setStatus("מסיים…");
+        await endCall();
+      });
+
+      // Transcript controls
+      byId("btnClearTranscript").addEventListener("click", () => clearTranscript());
+
+      setStatus("ממתין");
+      updateTranscriptCount();
+    });
+  </script>
+</body>
+</html>
