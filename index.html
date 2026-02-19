@@ -7,17 +7,17 @@
 
   <style>
     :root{
-      /* Airline palette (sky / night) */
-      --air-sky:#0B76FF;
-      --air-sky-2:#44B6FF;
-      --air-navy:#08131F;
-      --air-bg:#EEF5FF;
-      --air-card:#FFFFFF;
-      --air-border:#DFE9F6;
-      --air-muted:#6C7A8B;
+      /* Israel Airways palette (sky / navy / white) */
+      --ia-sky:#0B76FF;
+      --ia-sky-2:#44B6FF;
+      --ia-navy:#08131F;
+      --ia-bg:#EEF5FF;
+      --ia-card:#FFFFFF;
+      --ia-border:#DFE9F6;
+      --ia-muted:#6C7A8B;
 
-      --air-green:#0E8A5B;
-      --air-green-2:#0A6B46;
+      --ia-green:#0E8A5B;
+      --ia-green-2:#0A6B46;
 
       --shadow:0 16px 40px rgba(8,19,31,.12);
       --shadow-soft:0 10px 25px rgba(8,19,31,.10);
@@ -50,13 +50,13 @@
       height:100%;
       border-radius:30px;
       overflow:hidden;
-      background:var(--air-bg);
+      background:var(--ia-bg);
       position:relative;
       display:flex;
       flex-direction:column;
     }
 
-    /* Header (airline style) */
+    /* Header (Israel Airways) */
     .header{
       padding:18px 18px 16px;
       color:#fff;
@@ -64,7 +64,19 @@
       box-shadow:0 10px 30px rgba(0,0,0,.22);
       background:
         radial-gradient(900px 280px at 20% 0%, rgba(255,255,255,.25), rgba(255,255,255,0) 60%),
-        linear-gradient(180deg, var(--air-sky), var(--air-sky-2));
+        linear-gradient(180deg, var(--ia-sky), var(--ia-sky-2));
+    }
+
+    /* subtle “flight line” accent */
+    .header::after{
+      content:"";
+      position:absolute;
+      inset:auto -40px 18px -40px;
+      height:2px;
+      background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.65), rgba(255,255,255,0));
+      opacity:.55;
+      pointer-events:none;
+      transform: rotate(-2deg);
     }
 
     /* Top row: time | centered logo | status pill */
@@ -90,6 +102,7 @@
       gap:10px;
     }
 
+    /* Israel Airways brand mark (inline SVG) */
     .brandMark{
       width:44px;height:44px;
       border-radius:14px;
@@ -99,9 +112,9 @@
       place-items:center;
       backdrop-filter: blur(8px);
       box-shadow:0 10px 25px rgba(0,0,0,.12);
-      font-weight:1000;
-      letter-spacing:.3px;
+      overflow:hidden;
     }
+    .brandMark svg{ width:34px;height:34px; display:block; }
 
     .brandText{
       display:flex;
@@ -112,6 +125,7 @@
     .brandText .name{
       font-weight:1000;
       font-size:14px;
+      letter-spacing:.2px;
     }
     .brandText .tag{
       font-weight:900;
@@ -237,7 +251,7 @@
       border:1px solid rgba(11,118,255,.14);
     }
 
-    /* Quick actions row (airline) */
+    /* Quick actions row */
     .quickActions{
       display:grid;
       grid-template-columns: repeat(4, 1fr);
@@ -246,7 +260,7 @@
     }
     .qa{
       background:#fff;
-      border:1px solid var(--air-border);
+      border:1px solid var(--ia-border);
       border-radius:18px;
       padding:12px 10px;
       display:flex;
@@ -261,7 +275,7 @@
       border:1px solid rgba(11,118,255,.14);
       display:grid;place-items:center;
       font-weight:1000;
-      color: var(--air-sky);
+      color: var(--ia-sky);
       font-size:16px;
     }
     .qaLabel{
@@ -274,7 +288,7 @@
     /* Messages card */
     .msgCard{
       background:#fff;
-      border:1px solid var(--air-border);
+      border:1px solid var(--ia-border);
       border-radius:22px;
       box-shadow: var(--shadow-soft);
       padding:14px;
@@ -305,7 +319,7 @@
       width:44px;height:44px;border-radius:16px;
       display:grid;place-items:center;
       font-weight:1000;
-      color: var(--air-sky);
+      color: var(--ia-sky);
       background: rgba(11,118,255,.10);
       border:1px solid rgba(11,118,255,.14);
       flex:0 0 auto;
@@ -313,7 +327,7 @@
     .bubble{
       flex:1;
       background: #fff;
-      border:1px solid var(--air-border);
+      border:1px solid var(--ia-border);
       border-radius:22px;
       padding:14px 14px 12px;
       box-shadow:0 10px 25px rgba(8,19,31,.06);
@@ -364,16 +378,16 @@
       user-select:none;
     }
     .btn.primary{
-      background: linear-gradient(180deg, var(--air-sky), var(--air-sky-2));
+      background: linear-gradient(180deg, var(--ia-sky), var(--ia-sky-2));
       color:#fff;
     }
     .btn.call{
-      background: linear-gradient(180deg, var(--air-green), var(--air-green-2));
+      background: linear-gradient(180deg, var(--ia-green), var(--ia-green-2));
       color:#fff;
     }
     .btn.ghost{
       background:#fff;
-      border:1px solid var(--air-border);
+      border:1px solid var(--ia-border);
       color: rgba(8,19,31,.82);
       box-shadow:none;
     }
@@ -408,12 +422,12 @@
       box-shadow:0 10px 25px rgba(8,19,31,.06);
     }
 
-    /* Bottom nav (airline) */
+    /* Bottom nav */
     .nav{
       position:absolute;
       left:0;right:0;bottom:0;
       background: rgba(255,255,255,.92);
-      border-top:1px solid var(--air-border);
+      border-top:1px solid var(--ia-border);
       padding:10px 10px 14px;
       display:flex;
       justify-content:space-around;
@@ -435,11 +449,11 @@
       display:grid;place-items:center;
       border-radius:10px;
     }
-    .navItem.active{ color: var(--air-sky); }
+    .navItem.active{ color: var(--ia-sky); }
     .navItem.active .ico{
       background: rgba(11,118,255,.12);
       border:1px solid rgba(11,118,255,.14);
-      color: var(--air-sky);
+      color: var(--ia-sky);
     }
 
     /* Modals / overlays */
@@ -471,7 +485,7 @@
     }
     .topBar{
       padding:14px;
-      border-bottom:1px solid var(--air-border);
+      border-bottom:1px solid var(--ia-border);
       display:flex;
       justify-content:space-between;
       align-items:center;
@@ -518,7 +532,7 @@
     /* Rebooking / options cards */
     .projGrid{ display:grid; gap:12px; }
     .projCard{
-      border:1px solid var(--air-border);
+      border:1px solid var(--ia-border);
       border-radius:18px;
       padding:12px;
       background:#fff;
@@ -605,11 +619,27 @@
         <div class="topRow">
           <div class="time">11:07</div>
 
-          <div class="logoCenter" title="Israeli Air">
-            <div class="brandMark">IA</div>
+          <div class="logoCenter" title="Israel Airways">
+            <div class="brandMark" aria-label="Israel Airways">
+              <!-- Simple IA monogram + flight sweep (inline SVG) -->
+              <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
+                <defs>
+                  <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/>
+                    <stop offset="1" stop-color="#FFFFFF" stop-opacity=".78"/>
+                  </linearGradient>
+                </defs>
+                <path d="M10 46 C 22 34, 34 30, 54 22" fill="none" stroke="url(#g)" stroke-width="5" stroke-linecap="round" opacity=".95"/>
+                <path d="M46 22 l8 -3 -4 7" fill="none" stroke="url(#g)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".95"/>
+                <path d="M18 50 V18" stroke="url(#g)" stroke-width="6" stroke-linecap="round"/>
+                <path d="M46 50 V18" stroke="url(#g)" stroke-width="6" stroke-linecap="round" opacity=".92"/>
+                <path d="M18 34 H46" stroke="url(#g)" stroke-width="6" stroke-linecap="round" opacity=".92"/>
+              </svg>
+            </div>
+
             <div class="brandText">
-              <div class="name">ישראלי אייר</div>
-              <div class="tag">הטיסה שלי</div>
+              <div class="name">Israel Airways</div>
+              <div class="tag">My Flight • הטיסה שלי</div>
             </div>
           </div>
 
@@ -657,7 +687,7 @@
 
         <div class="msgCard">
           <div class="msgHeader">
-            <div class="msgHeaderLeft">נועה • תמיכת טיסות</div>
+            <div class="msgHeaderLeft">נועה • Israel Airways Support</div>
             <div class="msgHeaderRight">הרגע</div>
           </div>
 
@@ -677,7 +707,7 @@
                 <button class="btn call" id="btnCallNow">📞 דבר עם נציג/ה</button>
               </div>
 
-              <div class="tip">טיפ: “דבר עם נציג/ה” פותח שיחת WebRTC בתוך האפליקציה עם תמלול חי.</div>
+              <div class="tip">טיפ: “דבר עם נציג/ה” פותח שיחת WebRTC בתוך Israel Airways עם תמלול חי.</div>
             </div>
           </div>
 
@@ -754,7 +784,7 @@
                 <div class="projMeta">
                   • אם חשוב להגיע הכי מוקדם: לבחור <b>מוקדמת היום</b><br>
                   • אם חשוב להימנע משינויים: להישאר עם הטיסה + עדכון שער<br>
-                  • רוצים? נעזור בצ׳ק-אין/מושב/כבודה בשיחה קצרה
+                  • רוצים? Israel Airways תעזור בצ׳ק-אין/מושב/כבודה בשיחה קצרה
                 </div>
                 <div class="btnRow" style="margin-top:12px;">
                   <button class="btn call" id="btnProjectionCall">📞 דבר עם נציג/ה</button>
@@ -771,7 +801,7 @@
       <div class="overlay" id="callOverlay" aria-hidden="true">
         <div class="sheet callSheet">
           <div class="topBar">
-            <div class="h">שיחה עם נציג/ה • תמיכת טיסות</div>
+            <div class="h">שיחה עם נציג/ה • Israel Airways Support</div>
             <button class="btn ghost" id="btnCloseCall">✕</button>
           </div>
 
@@ -906,7 +936,7 @@
       }
 
       // BOT: always append into ONE bubble (until user speaks)
-      const botLabel = "נועה";
+      const botLabel = "נועה • Israel Airways";
 
       if (!lastBotBubbleEl) {
         const { line, meta } = _createLineEl("bot", safeText, botLabel);
