@@ -603,6 +603,13 @@
       letter-spacing:.2px;
     }
 
+    /* xApp iframe */
+    #xappFrame{
+      border:0;
+      width:100%;
+      height:100%;
+    }
+
     /* Hide Cognigy launcher visually once we use our own controls */
     .hide-cognigy-launcher button[data-testid="cognigy-call-button"]{
       opacity:0 !important;
@@ -621,7 +628,6 @@
 
           <div class="logoCenter" title="Israel Airways">
             <div class="brandMark" aria-label="Israel Airways">
-              <!-- Simple IA monogram + flight sweep (inline SVG) -->
               <svg viewBox="0 0 64 64" role="img" aria-hidden="true">
                 <defs>
                   <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
@@ -820,7 +826,7 @@
               <button class="btn ghost" id="btnClearTranscript" title="נקה תמלול">נקה</button>
             </div>
 
-            <!-- Transcript -->
+            <!-- Transcript + CTA -->
             <div class="projCard" id="transcriptCard">
               <div class="projTitle">
                 <span>תמלול חי</span>
@@ -828,7 +834,29 @@
               </div>
 
               <div class="transcriptList" id="transcriptList" aria-live="polite"></div>
+
+              <!-- CTA appears when trigger phrase is spoken -->
+              <div id="xappCtaArea" style="margin-top:10px; display:none;">
+                <button class="btn call" id="btnOpenXapp" disabled>לחצו כאן</button>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- xApp overlay -->
+      <div class="overlay" id="xappOverlay" aria-hidden="true">
+        <div class="sheet callSheet">
+          <div class="topBar">
+            <div class="h">האפשרויות שלך</div>
+            <button class="btn ghost" id="btnCloseXapp">✕</button>
+          </div>
+
+          <div class="callBody" style="padding:0;">
+            <iframe
+              id="xappFrame"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-popups">
+            </iframe>
           </div>
         </div>
       </div>
@@ -842,6 +870,22 @@
     const COGNIGY_WEBRTC_ENDPOINT_URL =
       "https://endpoint-trial.cognigy.ai/7d06411dfa1eb91d959df667523152a9d4c621bc04d34723abaf1c71b858ccad";
 
+    // ===== xApp / ntfy config (NEW AIRLINE TOPIC) =====
+    const NTFY_TOPIC = "ia-xapp-demo-6f2c9c8f1a3e4b4bb8c0f7";
+
+    const XAPP_TRIGGER_PHRASE_1 =
+      "לחץ למטה כדי להציג את אפשרויות הטיסה הזמינות על המסך.";
+    const XAPP_TRIGGER_PHRASE_2 =
+      "הטיסה הוזמנה, עכשיו בואו נבחר את המושב שלכם, אנא לחצו על הכפתור למטה, אל תשכחו לגלול למטה כדי לאשר את בחירתכם.....";
+
+    const FALLBACK_XAPP_URL = "https://example.com";
+
+    let latestXappUrl = null;
+    let latestXappStep = null;
+
+    let pendingXappStep = null;
+    let lastConsumedXappStep = null;
+
     // ========= HELPERS =========
     const byId = (id) => document.getElementById(id);
     const show = (el) => el.classList.add("show");
@@ -854,13 +898,102 @@
       return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== "hidden";
     }
 
+    // ========= xApp UI =========
+    function showXappCta(step){
+      const area = byId("xappCtaArea");
+      if (!area) return;
+
+      pendingXappStep = step;
+
+      if (pendingXappStep !== null && pendingXappStep === lastConsumedXappStep) return;
+
+      area.style.display = "block";
+      updateXappCtaButton();
+    }
+
+    function hideXappCta(){
+      const area = byId("xappCtaArea");
+      if (!area) return;
+      area.style.display = "none";
+    }
+
+    function getUrlForPendingStep(){
+      if (pendingXappStep != null) {
+        if (latestXappUrl && latestXappStep != null && Number(latestXappStep) === Number(pendingXappStep)) {
+          return latestXappUrl;
+        }
+        return null;
+      }
+      return latestXappUrl || FALLBACK_XAPP_URL;
+    }
+
+    function updateXappCtaButton(){
+      const btn = byId("btnOpenXapp");
+      if (!btn) return;
+
+      const url = getUrlForPendingStep() || (pendingXappStep == null ? FALLBACK_XAPP_URL : null);
+
+      if (url){
+        btn.disabled = false;
+        btn.textContent = "לחצו כאן";
+      } else {
+        btn.disabled = true;
+        btn.textContent = "טוען קישור…";
+      }
+    }
+
+    function openXappInApp(url){
+      const overlay = byId("xappOverlay");
+      const frame = byId("xappFrame");
+      if (!overlay || !frame) return;
+
+      frame.src = url;
+      show(overlay);
+    }
+
+    function closeXapp(){
+      const frame = byId("xappFrame");
+      if (frame) frame.src = "about:blank";
+      hide(byId("xappOverlay"));
+    }
+
+    // ========= NTFY SUBSCRIBE (SSE) =========
+    function subscribeToNtfy(){
+      const url = `https://ntfy.sh/${NTFY_TOPIC}/sse`;
+      const es = new EventSource(url);
+
+      es.onmessage = (ev) => {
+        try{
+          const envelope = JSON.parse(ev.data);
+          const msg = envelope.message;
+          if (!msg) return;
+
+          const payload = JSON.parse(msg);
+          if (payload?.type !== "xapp") return;
+
+          if (typeof payload.url === "string" && payload.url.trim()){
+            latestXappUrl = payload.url.trim();
+            latestXappStep = payload.step ?? null;
+
+            updateXappCtaButton();
+            console.log("xApp URL updated:", latestXappUrl, "step:", latestXappStep);
+          }
+        } catch {
+          // ignore
+        }
+      };
+
+      es.onerror = () => {
+        console.warn("ntfy SSE disconnected (will retry)...");
+      };
+
+      window.__ntfy = es;
+    }
+
     // ========= TRANSCRIPT UI (BOT merged into one bubble + auto-scroll pin) =========
     let transcriptLines = 0;
-
-    // auto-scroll "pin to bottom" state
     let transcriptPinnedToBottom = true;
 
-    // BOT aggregation state (one bubble until user speaks)
     let lastBotBubbleEl = null;
     let lastBotMetaEl = null;
     let lastBotText = "";
@@ -891,7 +1024,6 @@
         transcriptPinnedToBottom = distanceFromBottom < thresholdPx;
       }, { passive: true });
 
-      // start pinned
       transcriptPinnedToBottom = true;
     }
 
@@ -912,6 +1044,20 @@
       lastBotBubbleEl = null;
       lastBotMetaEl = null;
       lastBotText = "";
+    }
+
+    function maybeTriggerXappFromBotText(botText){
+      if (!botText) return;
+
+      if (botText.includes(XAPP_TRIGGER_PHRASE_1)) {
+        showXappCta(1);
+        return;
+      }
+
+      if (botText.includes(XAPP_TRIGGER_PHRASE_2)) {
+        showXappCta(2);
+        return;
+      }
     }
 
     function addTranscriptLine(originator, text){
@@ -935,7 +1081,6 @@
         return;
       }
 
-      // BOT: always append into ONE bubble (until user speaks)
       const botLabel = "נועה • Israel Airways";
 
       if (!lastBotBubbleEl) {
@@ -949,15 +1094,15 @@
         transcriptLines += 1;
         updateTranscriptCount();
         _scrollToBottomIfPinned(list);
+
+        maybeTriggerXappFromBotText(lastBotText);
         return;
       }
 
-      // Append to existing bot bubble
       const needsSpace = lastBotText.length > 0 && !/[ \n\r\t]$/.test(lastBotText);
       const joiner = needsSpace ? " " : "";
       lastBotText = `${lastBotText}${joiner}${safeText}`;
 
-      // Update bubble text while preserving meta element
       if (!lastBotBubbleEl.firstChild || lastBotBubbleEl.firstChild.nodeType !== Node.TEXT_NODE) {
         lastBotBubbleEl.insertBefore(document.createTextNode(""), lastBotMetaEl);
       }
@@ -966,6 +1111,8 @@
       if (lastBotMetaEl) lastBotMetaEl.textContent = botLabel;
 
       _scrollToBottomIfPinned(list);
+
+      maybeTriggerXappFromBotText(lastBotText);
     }
 
     function clearTranscript(){
@@ -975,6 +1122,11 @@
       updateTranscriptCount();
       _flushBotBubble();
       transcriptPinnedToBottom = true;
+
+      pendingXappStep = null;
+      lastConsumedXappStep = null;
+      hideXappCta();
+      updateXappCtaButton();
     }
 
     // ========= WEBSOCKET TAP (captures SIP INFO frames with JSON _transcription) =========
@@ -1171,6 +1323,10 @@
     document.addEventListener("DOMContentLoaded", () => {
       _setupTranscriptScrollPin();
 
+      // Start listening for xApp updates immediately
+      subscribeToNtfy();
+      updateXappCtaButton();
+
       // Projection modal
       byId("btnProjection").addEventListener("click", () => show(byId("projectionModal")));
       byId("btnCloseProjection").addEventListener("click", () => hide(byId("projectionModal")));
@@ -1211,6 +1367,26 @@
 
       // Transcript controls
       byId("btnClearTranscript").addEventListener("click", () => clearTranscript());
+
+      // xApp CTA click: HIDE immediately and mark step as consumed
+      byId("btnOpenXapp").addEventListener("click", () => {
+        const url = getUrlForPendingStep() || (pendingXappStep == null ? FALLBACK_XAPP_URL : null);
+        if (!url) return;
+
+        if (pendingXappStep !== null) {
+          lastConsumedXappStep = pendingXappStep;
+        }
+
+        hideXappCta();
+        updateXappCtaButton();
+        openXappInApp(url);
+      });
+
+      // xApp overlay close
+      byId("btnCloseXapp").addEventListener("click", () => closeXapp());
+      byId("xappOverlay").addEventListener("click", (e) => {
+        if (e.target === byId("xappOverlay")) closeXapp();
+      });
 
       setStatus("ממתין");
       updateTranscriptCount();
