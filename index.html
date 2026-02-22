@@ -7,7 +7,6 @@
 
   <style>
     :root{
-      /* Israel Airways palette (sky / navy / white) */
       --ia-sky:#0B76FF;
       --ia-sky-2:#44B6FF;
       --ia-navy:#08131F;
@@ -36,7 +35,6 @@
       padding:22px;
     }
 
-    /* Phone frame */
     .phone{
       width:min(430px, 94vw);
       height:min(900px, 94vh);
@@ -56,7 +54,6 @@
       flex-direction:column;
     }
 
-    /* Header (Israel Airways) */
     .header{
       padding:18px 18px 16px;
       color:#fff;
@@ -67,7 +64,6 @@
         linear-gradient(180deg, var(--ia-sky), var(--ia-sky-2));
     }
 
-    /* subtle “flight line” accent */
     .header::after{
       content:"";
       position:absolute;
@@ -79,7 +75,6 @@
       transform: rotate(-2deg);
     }
 
-    /* Top row: time | centered logo | status pill */
     .topRow{
       display:grid;
       grid-template-columns: 1fr auto 1fr;
@@ -90,7 +85,7 @@
       opacity:.95;
     }
     .time{
-      justify-self:end; /* RTL */
+      justify-self:end;
       font-weight:900;
     }
 
@@ -102,7 +97,6 @@
       gap:10px;
     }
 
-    /* Israel Airways brand mark (inline SVG) */
     .brandMark{
       width:44px;height:44px;
       border-radius:14px;
@@ -134,7 +128,7 @@
     }
 
     .pillStatus{
-      justify-self:start; /* RTL */
+      justify-self:start;
       display:inline-flex;
       align-items:center;
       gap:8px;
@@ -164,7 +158,6 @@
       font-weight:800;
     }
 
-    /* Flight strip (mini itinerary) */
     .flightStrip{
       margin-top:14px;
       display:grid;
@@ -221,7 +214,6 @@
       opacity:.92;
     }
 
-    /* Main content */
     .content{
       flex:1;
       overflow:auto;
@@ -251,7 +243,6 @@
       border:1px solid rgba(11,118,255,.14);
     }
 
-    /* Quick actions row */
     .quickActions{
       display:grid;
       grid-template-columns: repeat(4, 1fr);
@@ -285,7 +276,6 @@
       text-align:center;
     }
 
-    /* Messages card */
     .msgCard{
       background:#fff;
       border:1px solid var(--ia-border);
@@ -408,7 +398,7 @@
     .userReplyRow{
       margin-top:14px;
       display:flex;
-      justify-content:flex-start; /* RTL: bubble on the left */
+      justify-content:flex-start;
     }
     .userReply{
       max-width:76%;
@@ -422,7 +412,6 @@
       box-shadow:0 10px 25px rgba(8,19,31,.06);
     }
 
-    /* Bottom nav */
     .nav{
       position:absolute;
       left:0;right:0;bottom:0;
@@ -456,7 +445,6 @@
       color: var(--ia-sky);
     }
 
-    /* Modals / overlays */
     .modal, .overlay{
       position:absolute;
       inset:0;
@@ -529,7 +517,6 @@
       white-space:nowrap;
     }
 
-    /* Rebooking / options cards */
     .projGrid{ display:grid; gap:12px; }
     .projCard{
       border:1px solid var(--ia-border);
@@ -554,7 +541,6 @@
       line-height:1.55;
     }
 
-    /* Transcript list */
     #transcriptCard{
       display:flex;
       flex-direction:column;
@@ -585,12 +571,12 @@
       white-space:pre-wrap;
     }
     .tLine.bot{
-      align-self:flex-end; /* RTL: bot on the right */
+      align-self:flex-end;
       background: rgba(11,118,255,.06);
       border-color: rgba(11,118,255,.16);
     }
     .tLine.user{
-      align-self:flex-start; /* RTL: user on the left */
+      align-self:flex-start;
       background: rgba(14,138,91,.10);
       border-color: rgba(14,138,91,.18);
     }
@@ -610,7 +596,6 @@
       height:100%;
     }
 
-    /* Hide Cognigy launcher visually once we use our own controls */
     .hide-cognigy-launcher button[data-testid="cognigy-call-button"]{
       opacity:0 !important;
       pointer-events:none !important;
@@ -731,7 +716,6 @@
         <div class="navItem"><div class="ico">☰</div><div>עוד</div></div>
       </div>
 
-      <!-- Options / Rebooking modal -->
       <div class="modal" id="projectionModal" aria-hidden="true">
         <div class="sheet">
           <div class="topBar">
@@ -803,7 +787,6 @@
         </div>
       </div>
 
-      <!-- Call overlay -->
       <div class="overlay" id="callOverlay" aria-hidden="true">
         <div class="sheet callSheet">
           <div class="topBar">
@@ -826,7 +809,6 @@
               <button class="btn ghost" id="btnClearTranscript" title="נקה תמלול">נקה</button>
             </div>
 
-            <!-- Transcript + CTA -->
             <div class="projCard" id="transcriptCard">
               <div class="projTitle">
                 <span>תמלול חי</span>
@@ -835,7 +817,6 @@
 
               <div class="transcriptList" id="transcriptList" aria-live="polite"></div>
 
-              <!-- CTA appears when trigger phrase is spoken -->
               <div id="xappCtaArea" style="margin-top:10px; display:none;">
                 <button class="btn call" id="btnOpenXapp" disabled>לחצו כאן</button>
               </div>
@@ -844,7 +825,6 @@
         </div>
       </div>
 
-      <!-- xApp overlay -->
       <div class="overlay" id="xappOverlay" aria-hidden="true">
         <div class="sheet callSheet">
           <div class="topBar">
@@ -853,8 +833,7 @@
           </div>
 
           <div class="callBody" style="padding:0;">
-            <iframe
-              id="xappFrame"
+            <iframe id="xappFrame"
               sandbox="allow-scripts allow-forms allow-same-origin allow-popups">
             </iframe>
           </div>
@@ -870,8 +849,8 @@
     const COGNIGY_WEBRTC_ENDPOINT_URL =
       "https://endpoint-trial.cognigy.ai/7d06411dfa1eb91d959df667523152a9d4c621bc04d34723abaf1c71b858ccad";
 
-    // ===== xApp / ntfy config (NEW AIRLINE TOPIC) =====
-    const NTFY_TOPIC = "ia-xapp-demo-6f2c9c8f1a3e4b4bb8c0f7";
+    // ===== ntfy config (AIRLINE) =====
+    const NTFY_TOPIC = "ia-xapp-demo-9c1f7d2e4b8a4d41a3f2c0";
 
     const XAPP_TRIGGER_PHRASE_1 =
       "לחץ למטה כדי להציג את אפשרויות הטיסה הזמינות על המסך.";
@@ -880,8 +859,8 @@
 
     const FALLBACK_XAPP_URL = "https://example.com";
 
-    let latestXappUrl = null;
-    let latestXappStep = null;
+    // store URL per step (more robust than “latest wins”)
+    const xappUrlByStep = { 1: null, 2: null };
 
     let pendingXappStep = null;
     let lastConsumedXappStep = null;
@@ -904,7 +883,6 @@
       if (!area) return;
 
       pendingXappStep = step;
-
       if (pendingXappStep !== null && pendingXappStep === lastConsumedXappStep) return;
 
       area.style.display = "block";
@@ -919,20 +897,16 @@
 
     function getUrlForPendingStep(){
       if (pendingXappStep != null) {
-        if (latestXappUrl && latestXappStep != null && Number(latestXappStep) === Number(pendingXappStep)) {
-          return latestXappUrl;
-        }
-        return null;
+        return xappUrlByStep[pendingXappStep] || null;
       }
-      return latestXappUrl || FALLBACK_XAPP_URL;
+      return null;
     }
 
     function updateXappCtaButton(){
       const btn = byId("btnOpenXapp");
       if (!btn) return;
 
-      const url = getUrlForPendingStep() || (pendingXappStep == null ? FALLBACK_XAPP_URL : null);
-
+      const url = getUrlForPendingStep();
       if (url){
         btn.disabled = false;
         btn.textContent = "לחצו כאן";
@@ -971,12 +945,14 @@
           const payload = JSON.parse(msg);
           if (payload?.type !== "xapp") return;
 
-          if (typeof payload.url === "string" && payload.url.trim()){
-            latestXappUrl = payload.url.trim();
-            latestXappStep = payload.step ?? null;
+          const step = Number(payload.step);
+          const urlStr = typeof payload.url === "string" ? payload.url.trim() : "";
+          if (!step || !urlStr) return;
 
+          if (step === 1 || step === 2) {
+            xappUrlByStep[step] = urlStr;
             updateXappCtaButton();
-            console.log("xApp URL updated:", latestXappUrl, "step:", latestXappStep);
+            console.log("xApp URL updated for step", step, ":", urlStr);
           }
         } catch {
           // ignore
@@ -1049,15 +1025,8 @@
     function maybeTriggerXappFromBotText(botText){
       if (!botText) return;
 
-      if (botText.includes(XAPP_TRIGGER_PHRASE_1)) {
-        showXappCta(1);
-        return;
-      }
-
-      if (botText.includes(XAPP_TRIGGER_PHRASE_2)) {
-        showXappCta(2);
-        return;
-      }
+      if (botText.includes(XAPP_TRIGGER_PHRASE_1)) showXappCta(1);
+      if (botText.includes(XAPP_TRIGGER_PHRASE_2)) showXappCta(2);
     }
 
     function addTranscriptLine(originator, text){
@@ -1111,7 +1080,6 @@
       if (lastBotMetaEl) lastBotMetaEl.textContent = botLabel;
 
       _scrollToBottomIfPinned(list);
-
       maybeTriggerXappFromBotText(lastBotText);
     }
 
@@ -1163,9 +1131,7 @@
                 addTranscriptLine(originator, m.text.trim());
               }
             }
-          } catch {
-            // ignore
-          }
+          } catch {}
         });
 
         return ws;
@@ -1235,7 +1201,6 @@
       }
     }
 
-    // ========= Start/End button discovery =========
     function findCognigyStartButton(){
       return (
         document.querySelector('button[data-testid="cognigy-call-button"]') ||
@@ -1323,7 +1288,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       _setupTranscriptScrollPin();
 
-      // Start listening for xApp updates immediately
+      // Listen for xApp updates immediately (same as Banking)
       subscribeToNtfy();
       updateXappCtaButton();
 
@@ -1368,14 +1333,12 @@
       // Transcript controls
       byId("btnClearTranscript").addEventListener("click", () => clearTranscript());
 
-      // xApp CTA click: HIDE immediately and mark step as consumed
+      // CTA click: hide immediately + open xApp
       byId("btnOpenXapp").addEventListener("click", () => {
-        const url = getUrlForPendingStep() || (pendingXappStep == null ? FALLBACK_XAPP_URL : null);
+        const url = getUrlForPendingStep() || FALLBACK_XAPP_URL;
         if (!url) return;
 
-        if (pendingXappStep !== null) {
-          lastConsumedXappStep = pendingXappStep;
-        }
+        if (pendingXappStep !== null) lastConsumedXappStep = pendingXappStep;
 
         hideXappCta();
         updateXappCtaButton();
